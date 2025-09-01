@@ -9,16 +9,13 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Config, &'static str> {
-        let args: Vec<String> = env::args().collect();
+        let mut args = env::args();
 
         dbg!(&args);
 
-        if args.len() < 3 {
-            return Err("need at least two arguments");
-        }
-
-        let query = args[1].clone();
-        let file_path = args[2].clone();
+        let _program_name = args.next(); // ignore program name
+        let query = args.next().ok_or("Didn't get a query string")?;
+        let file_path = args.next().ok_or("Didn't get a file path")?;
         let ignore_case = env_var_is_truthy("IGNORE_CASE");
 
         Ok(Config {
