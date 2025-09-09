@@ -1,18 +1,20 @@
 mod worker;
 
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
+
+use uuid::Uuid;
 
 use crate::worker::{Job, Worker};
 
 #[derive(Debug)]
 pub enum PoolCreationError {
     EmptyPool,
-    WorkerSpawnFailed
+    WorkerSpawnFailed,
 }
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: Option<mpsc::Sender<Job>>,
 }
 
 impl ThreadPool {
@@ -38,14 +40,36 @@ impl ThreadPool {
             }
         }
 
-        Ok(ThreadPool{ workers, sender })
+        Ok(ThreadPool {
+            workers,
+            sender: Some(sender),
+        })
     }
 
-    pub fn execute<F>(&self, f: F)
+    pub fn execute<F>(&self, id: Uuid, f: F)
     where
-        F: FnOnce() + Send + 'static
+        F: FnOnce() + Send + 'static,
     {
-        let job = Box::new(f);
-        self.sender.send(job).expect("Failed to send the job to worker");
+        let job = Job {
+            id,
+            closure: Box::new(f),
+        };
+
+        self.sender
+            .as_ref()
+            .unwrap()
+            .send(job)
+            .expect("Failed to send the job to worker");
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        drop(self.sender.take());
+        for worker in &mut self.workers.drain(..) {
+            println!("Shutting down worker {}", worker.id);
+
+            worker.thread.join().unwrap();
+        }
     }
 }
