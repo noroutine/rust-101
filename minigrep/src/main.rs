@@ -1,12 +1,15 @@
+#![allow(special_module_name)]
+
 use std::error::Error;
 use std::fs;
 use std::process;
 
 mod config;
-
 use config::Config;
-use minigrep::search;
-use minigrep::search_case_insensitive;
+
+mod lib;
+use lib::search;
+use lib::search_case_insensitive;
 
 fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     // println!("Searching {}", config.query);

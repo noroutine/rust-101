@@ -1,0 +1,8 @@
+[package]
+name = "async-101"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+futures = "0.3.31"
+trpl = "0.2.0"
